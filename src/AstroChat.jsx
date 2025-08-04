@@ -22,7 +22,7 @@ const astroIcon = (
   </span>
 );
 
-export default function AstroChat() {
+export default function AstroChat({ astroPath, selectedProfile }) {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
