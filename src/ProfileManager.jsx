@@ -1,14 +1,4 @@
-import React, { useState, useEffect } from "react";
-
-const initialProfile = {
-  name: "",
-  birthDate: "",
-  birthTime: "",
-  birthLocation: "",
-  gender: "",
-};
-
-const LS_KEY = "astroai_profiles_v1";
+import React, { useState } from "react";
 
 export default function ProfileManager({
   profiles,
@@ -16,251 +6,251 @@ export default function ProfileManager({
   selectedProfile,
   setSelectedProfile,
 }) {
-  const [newProfile, setNewProfile] = useState(initialProfile);
-  const [editing, setEditing] = useState(profiles.length === 0);
+  const [form, setForm] = useState({
+    name: "",
+    birthDate: "",
+    birthTime: "",
+    birthLocation: "",
+    gender: "",
+  });
   const [editingIndex, setEditingIndex] = useState(null);
   const [error, setError] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [showForm, setShowForm] = useState(profiles.length === 0);
 
-  // Загрузка из localStorage при инициализации
-  useEffect(() => {
-    const saved = localStorage.getItem(LS_KEY);
-    if (saved) {
-      try {
-        const arr = JSON.parse(saved);
-        setProfiles(arr);
-        if (arr.length > 0) setSelectedProfile(arr[0]);
-      } catch {
-        // ignore
-      }
-    }
-    // eslint-disable-next-line
-  }, []);
+  // Mobile detector (можно вынести отдельно)
+  const isMobile =
+    typeof window !== "undefined" &&
+    (window.innerWidth < 650 ||
+      /iPhone|Android|Mobile/i.test(navigator.userAgent));
 
-  // Сохранение в localStorage при каждом изменении профилей
-  useEffect(() => {
-    localStorage.setItem(LS_KEY, JSON.stringify(profiles));
-  }, [profiles]);
-
-  // Сбросить форму
-  const resetForm = () => {
-    setNewProfile(initialProfile);
-    setEditing(false);
-    setEditingIndex(null);
+  function handleChange(e) {
+    setForm({ ...form, [e.target.name]: e.target.value });
     setError("");
-  };
-
-  // Проверить обязательные поля
-  function validate(profile) {
-    if (
-      !profile.name.trim() ||
-      !profile.birthDate.trim() ||
-      !profile.birthTime.trim() ||
-      !profile.birthLocation.trim() ||
-      !profile.gender.trim()
-    ) {
-      return "Заполни все поля профиля!";
-    }
-    // Примитивная проверка дат, времени и символов можно добавить по желанию
-    return "";
   }
 
-  // Добавить/редактировать профиль
-  const handleSaveProfile = () => {
-    const validation = validate(newProfile);
-    if (validation) {
-      setError(validation);
+  function handleSubmit(e) {
+    e.preventDefault();
+    if (
+      !form.name.trim() ||
+      !form.birthDate ||
+      !form.birthTime ||
+      !form.birthLocation.trim() ||
+      !form.gender
+    ) {
+      setError("Заполните все поля");
       return;
     }
-    let newArr = [...profiles];
+    let newProfiles;
     if (editingIndex !== null) {
-      newArr[editingIndex] = newProfile;
+      newProfiles = profiles.map((p, i) =>
+        i === editingIndex ? { ...form } : p
+      );
     } else {
-      newArr.push(newProfile);
+      newProfiles = [...profiles, { ...form }];
     }
-    setProfiles(newArr);
-    setSelectedProfile(newProfile);
-    resetForm();
-  };
-
-  // Выбор профиля
-  const handleSelectProfile = (profile) => {
-    setSelectedProfile(profile);
-    resetForm();
-  };
-
-  // Удаление профиля (через подтверждение)
-  const handleDeleteProfile = (index) => {
-    setConfirmDelete(index);
-  };
-
-  // Подтвердить удаление
-  const doDeleteProfile = (index) => {
-    const newArr = [...profiles];
-    newArr.splice(index, 1);
-    setProfiles(newArr);
-    if (selectedProfile === profiles[index]) {
-      setSelectedProfile(newArr[0] || null);
-    }
-    setConfirmDelete(null);
-    resetForm();
-  };
-
-  // Начать редактирование
-  const startEdit = (profile, idx) => {
-    setNewProfile(profile);
-    setEditing(true);
-    setEditingIndex(idx);
+    setProfiles(newProfiles);
+    setSelectedProfile({ ...form });
+    setForm({
+      name: "",
+      birthDate: "",
+      birthTime: "",
+      birthLocation: "",
+      gender: "",
+    });
+    setEditingIndex(null);
+    setShowForm(false);
     setError("");
-  };
+  }
+
+  function handleEdit(idx) {
+    setForm({ ...profiles[idx] });
+    setEditingIndex(idx);
+    setShowForm(true);
+    setError("");
+  }
+
+  function handleDelete(idx) {
+    const newProfiles = profiles.filter((_, i) => i !== idx);
+    setProfiles(newProfiles);
+    if (selectedProfile === profiles[idx]) setSelectedProfile(null);
+    setShowForm(false);
+  }
+
+  function handleSetActive(idx) {
+    setSelectedProfile(profiles[idx]);
+  }
 
   return (
     <div
       style={{
         display: "flex",
-        justifyContent: "center",
-        alignItems: "flex-start",
-        gap: "48px",
+        flexDirection: isMobile ? "column" : "row",
+        gap: isMobile ? 28 : 48,
+        padding: isMobile ? "16px 4vw" : "38px 40px 30px 40px",
         width: "100%",
-        maxWidth: 900,
-        margin: "0 auto",
-        marginTop: 28,
-        background: "rgba(25,27,47,0.92)",
-        borderRadius: 22,
-        padding: "38px 40px 44px 40px",
-        boxShadow: "0 12px 44px #0002",
-        minHeight: 420,
-        position: "relative",
+        minHeight: 390,
+        justifyContent: isMobile ? "flex-start" : "center",
+        alignItems: isMobile ? "stretch" : "flex-start",
       }}
     >
-      {/* Список профилей */}
-      <div style={{ minWidth: 290, flex: 1 }}>
-        <h2
+      {/* Профили слева */}
+      <div
+        style={{
+          flex: 1,
+          background: "rgba(24, 26, 47, 0.98)",
+          borderRadius: 20,
+          boxShadow: "0 4px 20px #3a277b17",
+          padding: isMobile ? "18px 9px" : "28px 32px",
+          minWidth: isMobile ? "99%" : 310,
+          marginBottom: isMobile ? 12 : 0,
+        }}
+      >
+        <div
           style={{
-            fontWeight: 800,
-            fontSize: 22,
-            marginBottom: 24,
-            color: "#bba5e2",
+            fontSize: isMobile ? 20 : 22,
+            color: "#bb7ffa",
+            fontWeight: 700,
+            marginBottom: 10,
+            letterSpacing: 0.5,
           }}
         >
           Ваши профили
-        </h2>
-        {profiles.length === 0 && !editing && (
+        </div>
+        {/* Карточки профилей */}
+        {profiles.length === 0 && (
           <button
             style={{
-              padding: "12px 14px",
-              borderRadius: 10,
-              background: "#292c4a",
-              color: "#bba5e2",
+              width: "100%",
+              padding: isMobile ? "14px 0" : "12px 0",
+              background: "linear-gradient(90deg,#bb7ffa55 30%,#48328522 100%)",
+              borderRadius: 11,
               border: "none",
-              marginBottom: 24,
-              fontSize: 16,
+              color: "#bb7ffa",
+              fontWeight: 700,
+              fontSize: isMobile ? 17 : 18,
+              marginBottom: 8,
               cursor: "pointer",
             }}
-            onClick={() => setEditing(true)}
+            onClick={() => setShowForm(true)}
           >
             Добавить первый профиль
           </button>
         )}
-        <ul style={{ listStyle: "none", padding: 0 }}>
-          {profiles.map((profile, i) => (
-            <li
-              key={i}
-              style={{
-                background:
-                  selectedProfile === profile ? "#392d64" : "#2d2942",
-                margin: "8px 0",
-                padding: 14,
-                borderRadius: 14,
-                cursor: "pointer",
-                boxShadow:
-                  selectedProfile === profile
-                    ? "0 2px 12px #bb7ffa44"
-                    : "none",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                border:
-                  selectedProfile === profile
-                    ? "2px solid #bb7ffa"
-                    : "1.5px solid #3e3461",
-                transition: "all 0.18s",
-              }}
-              onClick={() => handleSelectProfile(profile)}
-            >
-              <div>
-                <b>{profile.name}</b>
-                <div style={{ fontSize: 13, color: "#9e94c7" }}>
-                  {profile.birthDate} {profile.birthTime}
-                </div>
-                <div style={{ fontSize: 13, color: "#9e94c7" }}>
-                  {profile.birthLocation}
-                </div>
-                <div style={{ fontSize: 13, color: "#9e94c7" }}>
-                  {profile.gender}
-                </div>
+        {profiles.map((p, i) => (
+          <div
+            key={i}
+            style={{
+              background:
+                selectedProfile === p
+                  ? "linear-gradient(92deg,#6e52c6 0%,#bb7ffa33 100%)"
+                  : "rgba(44,33,68,0.92)",
+              color: selectedProfile === p ? "#fff" : "#e6d8ff",
+              border: selectedProfile === p ? "2.5px solid #bb7ffa88" : "none",
+              borderRadius: 12,
+              marginBottom: 8,
+              boxShadow:
+                selectedProfile === p
+                  ? "0 3px 16px #bb7ffa22"
+                  : "0 1px 10px #2416490c",
+              padding: isMobile ? "14px 13px 14px 15px" : "15px 17px 14px 19px",
+              display: "flex",
+              flexDirection: isMobile ? "column" : "row",
+              justifyContent: "space-between",
+              alignItems: isMobile ? "flex-start" : "center",
+              gap: 8,
+              cursor: "pointer",
+              position: "relative",
+              transition: "all 0.14s",
+            }}
+            onClick={() => handleSetActive(i)}
+          >
+            <div>
+              <div style={{ fontWeight: 700, fontSize: isMobile ? 17 : 18 }}>
+                {p.name}{" "}
+                {selectedProfile === p && (
+                  <span
+                    style={{
+                      fontSize: 13,
+                      color: "#f7eaffaa",
+                      marginLeft: 5,
+                    }}
+                  >
+                    (Active)
+                  </span>
+                )}
               </div>
-              <span>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    startEdit(profile, i);
-                  }}
-                  style={{
-                    marginLeft: 5,
-                    marginRight: 2,
-                    color: "#bb7ffa",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    fontSize: 17,
-                    padding: 3,
-                  }}
-                  title="Редактировать"
-                >
-                  ✎
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteProfile(i);
-                  }}
-                  style={{
-                    marginLeft: 4,
-                    color: "#d44",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    fontSize: 17,
-                    padding: 3,
-                  }}
-                  title="Удалить"
-                >
-                  ✖
-                </button>
-              </span>
-            </li>
-          ))}
-        </ul>
-        {/* Кнопка "Добавить новый профиль" */}
-        {profiles.length > 0 && !editing && (
+              <div style={{ fontSize: isMobile ? 14.5 : 15, opacity: 0.85 }}>
+                {p.birthDate} {p.birthTime}
+              </div>
+              <div style={{ fontSize: isMobile ? 13.5 : 14, opacity: 0.7 }}>
+                {p.birthLocation} | {p.gender}
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 5, marginTop: isMobile ? 7 : 0 }}>
+              <button
+                style={{
+                  background: "rgba(180,140,255,0.15)",
+                  border: "none",
+                  color: "#bb7ffa",
+                  borderRadius: 7,
+                  fontSize: isMobile ? 13 : 14,
+                  fontWeight: 700,
+                  padding: isMobile ? "5px 11px" : "7px 14px",
+                  cursor: "pointer",
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleEdit(i);
+                }}
+              >
+                Редактировать
+              </button>
+              <button
+                style={{
+                  background: "rgba(244,80,80,0.14)",
+                  border: "none",
+                  color: "#e47c8b",
+                  borderRadius: 7,
+                  fontSize: isMobile ? 13 : 14,
+                  fontWeight: 700,
+                  padding: isMobile ? "5px 11px" : "7px 14px",
+                  marginLeft: 3,
+                  cursor: "pointer",
+                }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDelete(i);
+                }}
+              >
+                Удалить
+              </button>
+            </div>
+          </div>
+        ))}
+        {/* Кнопка добавить */}
+        {profiles.length > 0 && !showForm && (
           <button
             style={{
-              marginTop: 18,
-              padding: "10px 15px",
-              background: "#bb7ffa",
-              color: "#181825",
-              border: "none",
-              borderRadius: 10,
-              fontWeight: 700,
-              fontSize: 16,
-              cursor: "pointer",
               width: "100%",
-              boxShadow: "0 0 10px #bb7ffa44",
+              padding: isMobile ? "13px 0" : "12px 0",
+              background: "linear-gradient(90deg,#bb7ffa44 40%,#48328511 100%)",
+              borderRadius: 10,
+              border: "none",
+              color: "#bb7ffa",
+              fontWeight: 700,
+              fontSize: isMobile ? 16 : 17,
+              marginTop: 10,
+              cursor: "pointer",
             }}
             onClick={() => {
-              setNewProfile(initialProfile);
-              setEditing(true);
+              setShowForm(true);
+              setForm({
+                name: "",
+                birthDate: "",
+                birthTime: "",
+                birthLocation: "",
+                gender: "",
+              });
               setEditingIndex(null);
               setError("");
             }}
@@ -270,287 +260,182 @@ export default function ProfileManager({
         )}
       </div>
 
-      {/* Форма нового профиля или просмотр профиля */}
-      <div style={{ minWidth: 310, flex: 1 }}>
-        <h2
+      {/* Форма профиля */}
+      {showForm && (
+        <form
+          onSubmit={handleSubmit}
           style={{
-            fontWeight: 800,
-            fontSize: 22,
-            marginBottom: 24,
-            color: "#bba5e2",
+            flex: 2,
+            background: "rgba(24, 24, 49, 0.97)",
+            borderRadius: 20,
+            boxShadow: "0 4px 18px #bb7ffa11",
+            padding: isMobile ? "19px 10px 14px 10px" : "32px 28px 26px 28px",
+            minWidth: isMobile ? "99%" : 330,
+            marginTop: isMobile ? 13 : 0,
+            marginBottom: isMobile ? 3 : 0,
+            display: "flex",
+            flexDirection: "column",
+            gap: isMobile ? 11 : 17,
           }}
         >
-          {editingIndex !== null ? "Редактировать профиль" : "Новый профиль"}
-        </h2>
-        {editing ? (
-          <div style={{ display: "flex", flexDirection: "column", gap: 13 }}>
-            <input
-              type="text"
-              name="name"
-              value={newProfile.name}
-              onChange={(e) =>
-                setNewProfile({ ...newProfile, name: e.target.value })
-              }
-              placeholder="Имя профиля"
-              style={{
-                padding: "10px 12px",
-                borderRadius: 8,
-                border: "1px solid #353768",
-                fontSize: 16,
-                background: "#232546",
-                color: "#fff",
-              }}
-            />
-            <input
-              type="date"
-              name="birthDate"
-              value={newProfile.birthDate}
-              onChange={(e) =>
-                setNewProfile({ ...newProfile, birthDate: e.target.value })
-              }
-              placeholder="Дата рождения"
-              style={{
-                padding: "10px 12px",
-                borderRadius: 8,
-                border: "1px solid #353768",
-                fontSize: 16,
-                background: "#232546",
-                color: "#fff",
-              }}
-            />
-            <input
-              type="time"
-              name="birthTime"
-              value={newProfile.birthTime}
-              onChange={(e) =>
-                setNewProfile({ ...newProfile, birthTime: e.target.value })
-              }
-              placeholder="Время рождения"
-              style={{
-                padding: "10px 12px",
-                borderRadius: 8,
-                border: "1px solid #353768",
-                fontSize: 16,
-                background: "#232546",
-                color: "#fff",
-              }}
-            />
-            <input
-              type="text"
-              name="birthLocation"
-              value={newProfile.birthLocation}
-              onChange={(e) =>
-                setNewProfile({ ...newProfile, birthLocation: e.target.value })
-              }
-              placeholder="Место рождения"
-              style={{
-                padding: "10px 12px",
-                borderRadius: 8,
-                border: "1px solid #353768",
-                fontSize: 16,
-                background: "#232546",
-                color: "#fff",
-              }}
-            />
-            <select
-              name="gender"
-              value={newProfile.gender}
-              onChange={(e) =>
-                setNewProfile({ ...newProfile, gender: e.target.value })
-              }
-              style={{
-                padding: "10px 12px",
-                borderRadius: 8,
-                border: "1px solid #353768",
-                fontSize: 16,
-                background: "#232546",
-                color: "#fff",
-              }}
-            >
-              <option value="">Пол</option>
-              <option value="Мужской">Мужской</option>
-              <option value="Женский">Женский</option>
-            </select>
-            {error && (
-              <div
-                style={{
-                  color: "#ff6262",
-                  fontWeight: 600,
-                  marginTop: 3,
-                  fontSize: 15,
-                }}
-              >
-                {error}
-              </div>
-            )}
-            <div style={{ display: "flex", gap: 10, marginTop: 3 }}>
-              <button
-                onClick={handleSaveProfile}
-                style={{
-                  padding: "10px 20px",
-                  background: "#bb7ffa",
-                  border: "none",
-                  borderRadius: 8,
-                  color: "#181825",
-                  fontWeight: 600,
-                  fontSize: 16,
-                  cursor: "pointer",
-                }}
-              >
-                {editingIndex !== null ? "Сохранить" : "Добавить"}
-              </button>
-              <button
-                onClick={resetForm}
-                style={{
-                  padding: "10px 20px",
-                  background: "#353768",
-                  border: "none",
-                  borderRadius: 8,
-                  color: "#fff",
-                  fontWeight: 600,
-                  fontSize: 16,
-                  cursor: "pointer",
-                }}
-              >
-                Отмена
-              </button>
-            </div>
-          </div>
-        ) : selectedProfile ? (
           <div
             style={{
-              background: "#2d2942",
-              borderRadius: 12,
-              padding: 18,
-              color: "#fff",
-              fontSize: 17,
+              color: "#bb7ffa",
+              fontWeight: 700,
+              fontSize: isMobile ? 19 : 21,
+              marginBottom: isMobile ? 3 : 10,
             }}
           >
-            <div>
-              <b>Имя:</b> {selectedProfile.name}
+            {editingIndex !== null ? "Редактировать профиль" : "Новый профиль"}
+          </div>
+          <input
+            name="name"
+            type="text"
+            placeholder="Имя профиля"
+            value={form.name}
+            onChange={handleChange}
+            style={{
+              padding: isMobile ? "12px 9px" : "14px 15px",
+              borderRadius: 9,
+              fontSize: isMobile ? 16 : 17,
+              border: "1.5px solid #bb7ffa55",
+              background: "#221b2c",
+              color: "#fff",
+              fontWeight: 500,
+              outline: "none",
+              marginBottom: 2,
+            }}
+            maxLength={24}
+            autoFocus
+          />
+          <input
+            name="birthDate"
+            type="date"
+            placeholder="Дата рождения"
+            value={form.birthDate}
+            onChange={handleChange}
+            style={{
+              padding: isMobile ? "12px 9px" : "14px 15px",
+              borderRadius: 9,
+              fontSize: isMobile ? 16 : 17,
+              border: "1.5px solid #bb7ffa55",
+              background: "#221b2c",
+              color: "#fff",
+              fontWeight: 500,
+              outline: "none",
+              marginBottom: 2,
+            }}
+            max={new Date().toISOString().slice(0, 10)}
+          />
+          <input
+            name="birthTime"
+            type="time"
+            placeholder="Время рождения"
+            value={form.birthTime}
+            onChange={handleChange}
+            style={{
+              padding: isMobile ? "12px 9px" : "14px 15px",
+              borderRadius: 9,
+              fontSize: isMobile ? 16 : 17,
+              border: "1.5px solid #bb7ffa55",
+              background: "#221b2c",
+              color: "#fff",
+              fontWeight: 500,
+              outline: "none",
+              marginBottom: 2,
+            }}
+          />
+          <input
+            name="birthLocation"
+            type="text"
+            placeholder="Место рождения"
+            value={form.birthLocation}
+            onChange={handleChange}
+            style={{
+              padding: isMobile ? "12px 9px" : "14px 15px",
+              borderRadius: 9,
+              fontSize: isMobile ? 16 : 17,
+              border: "1.5px solid #bb7ffa55",
+              background: "#221b2c",
+              color: "#fff",
+              fontWeight: 500,
+              outline: "none",
+              marginBottom: 2,
+            }}
+            maxLength={38}
+          />
+          <select
+            name="gender"
+            value={form.gender}
+            onChange={handleChange}
+            style={{
+              padding: isMobile ? "12px 9px" : "14px 15px",
+              borderRadius: 9,
+              fontSize: isMobile ? 16 : 17,
+              border: "1.5px solid #bb7ffa55",
+              background: "#221b2c",
+              color: "#fff",
+              fontWeight: 500,
+              outline: "none",
+              marginBottom: 2,
+            }}
+          >
+            <option value="">Пол</option>
+            <option value="Мужской">Мужской</option>
+            <option value="Женский">Женский</option>
+            <option value="Не указан">Не указан</option>
+          </select>
+          {error && (
+            <div style={{ color: "#ea9f7b", fontSize: isMobile ? 14 : 15 }}>
+              {error}
             </div>
-            <div>
-              <b>Дата:</b> {selectedProfile.birthDate}
-            </div>
-            <div>
-              <b>Время:</b> {selectedProfile.birthTime}
-            </div>
-            <div>
-              <b>Место:</b> {selectedProfile.birthLocation}
-            </div>
-            <div>
-              <b>Пол:</b> {selectedProfile.gender}
-            </div>
+          )}
+          <div style={{ display: "flex", gap: 10, marginTop: isMobile ? 9 : 13 }}>
             <button
+              type="submit"
               style={{
-                marginTop: 18,
-                background: "#353768",
+                background:
+                  "linear-gradient(90deg,#bb7ffa 40%,#7a5cf2 120%)",
+                color: "#191736",
+                fontWeight: 800,
+                fontSize: isMobile ? 16 : 17,
                 border: "none",
                 borderRadius: 8,
-                color: "#fff",
-                fontWeight: 600,
-                fontSize: 16,
-                padding: "10px 22px",
+                padding: isMobile ? "11px 19px" : "13px 28px",
+                cursor: "pointer",
+              }}
+            >
+              {editingIndex !== null ? "Сохранить" : "Добавить"}
+            </button>
+            <button
+              type="button"
+              style={{
+                background: "#21193b",
+                color: "#bb7ffa",
+                fontWeight: 700,
+                fontSize: isMobile ? 16 : 17,
+                border: "none",
+                borderRadius: 8,
+                padding: isMobile ? "11px 19px" : "13px 28px",
                 cursor: "pointer",
               }}
               onClick={() => {
-                setEditing(true);
-                setEditingIndex(
-                  profiles.findIndex((p) => p === selectedProfile)
-                );
-                setNewProfile(selectedProfile);
+                setShowForm(false);
+                setEditingIndex(null);
+                setError("");
+                setForm({
+                  name: "",
+                  birthDate: "",
+                  birthTime: "",
+                  birthLocation: "",
+                  gender: "",
+                });
               }}
             >
-              Редактировать
+              Отмена
             </button>
           </div>
-        ) : (
-          <div
-            style={{
-              background: "#2d2942",
-              borderRadius: 12,
-              padding: 18,
-              color: "#bbb",
-              fontSize: 16,
-            }}
-          >
-            Профиль не выбран.
-          </div>
-        )}
-      </div>
-
-      {/* Диалог подтверждения удаления */}
-      {confirmDelete !== null && (
-        <div
-          style={{
-            position: "fixed",
-            left: 0,
-            top: 0,
-            width: "100vw",
-            height: "100vh",
-            background: "rgba(18,18,32,0.62)",
-            zIndex: 22,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontFamily: "inherit",
-          }}
-        >
-          <div
-            style={{
-              background: "#232546",
-              borderRadius: 16,
-              padding: 36,
-              minWidth: 330,
-              color: "#fff",
-              fontSize: 18,
-              boxShadow: "0 6px 40px #0005",
-              border: "2px solid #bb7ffa33",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-            }}
-          >
-            <div style={{ marginBottom: 18 }}>
-              <b>Удалить профиль?</b>
-            </div>
-            <div style={{ color: "#bbb", fontSize: 15, marginBottom: 22 }}>
-              Действие необратимо. Профиль будет удалён.
-            </div>
-            <div style={{ display: "flex", gap: 18 }}>
-              <button
-                style={{
-                  padding: "9px 22px",
-                  background: "#bb7ffa",
-                  color: "#181825",
-                  border: "none",
-                  borderRadius: 9,
-                  fontWeight: 700,
-                  fontSize: 15,
-                  cursor: "pointer",
-                }}
-                onClick={() => doDeleteProfile(confirmDelete)}
-              >
-                Удалить
-              </button>
-              <button
-                style={{
-                  padding: "9px 22px",
-                  background: "#353768",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: 9,
-                  fontWeight: 700,
-                  fontSize: 15,
-                  cursor: "pointer",
-                }}
-                onClick={() => setConfirmDelete(null)}
-              >
-                Отмена
-              </button>
-            </div>
-          </div>
-        </div>
+        </form>
       )}
     </div>
   );
