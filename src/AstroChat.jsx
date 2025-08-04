@@ -39,11 +39,14 @@ export default function AstroChat({ astroPath, selectedProfile }) {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  async function sendMessageToGPT(msgs) {
+ async function sendMessageToGPT(msgs) {
     const response = await fetch("/api/gpt", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: msgs }),
+      body: JSON.stringify({
+        messages: msgs,
+        profile: selectedProfile, 
+      }),
     });
     const data = await response.json();
     return data.choices?.[0]?.message?.content || "Ошибка ответа AI.";
