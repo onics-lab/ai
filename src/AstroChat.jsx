@@ -3,7 +3,6 @@ import React, { useState, useRef, useEffect } from "react";
 const LS_KEY = "astroai_chat_history";
 
 export default function AstroChat({ selectedProfile }) {
-  // Грузим историю из LocalStorage при маунте
   const [messages, setMessages] = useState(() => {
     const saved = localStorage.getItem(LS_KEY);
     if (saved) return JSON.parse(saved);
@@ -20,17 +19,14 @@ export default function AstroChat({ selectedProfile }) {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Сохраняем историю в LocalStorage при каждом изменении
   useEffect(() => {
     localStorage.setItem(LS_KEY, JSON.stringify(messages));
   }, [messages]);
 
-  // Автоскролл вниз при добавлении сообщения
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  // Очистить чат
   function handleClearChat() {
     setMessages([
       {
@@ -41,7 +37,6 @@ export default function AstroChat({ selectedProfile }) {
     ]);
   }
 
-  // Отправка сообщения
   async function handleSend(e) {
     e.preventDefault();
     if (!input.trim() || loading) return;
@@ -67,7 +62,7 @@ export default function AstroChat({ selectedProfile }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          messages: newMessages.slice(-12), // последние 12 сообщений
+          messages: newMessages.slice(-12),
           profile: selectedProfile,
         }),
       });
@@ -93,7 +88,12 @@ export default function AstroChat({ selectedProfile }) {
     setLoading(false);
   }
 
-  // Стиль облака для сообщений
+  // Media-query-like style helpers
+  const isMobile =
+    window.innerWidth <= 600 ||
+    /iPhone|Android|Mobile/i.test(navigator.userAgent);
+
+  // Bubble style
   const bubbleStyle = (role) => ({
     alignSelf: role === "user" ? "flex-end" : "flex-start",
     background:
@@ -109,21 +109,20 @@ export default function AstroChat({ selectedProfile }) {
       role === "user"
         ? "0 4px 16px #bb7ffa50"
         : "0 2px 12px #44336615",
-    maxWidth: "84%",
-    padding: "16px 18px",
-    fontSize: 17,
+    maxWidth: isMobile ? "98%" : "84%",
+    padding: isMobile ? "12px 12px" : "16px 18px",
+    fontSize: isMobile ? 15.5 : 17,
     margin: "6px 0",
     whiteSpace: "pre-line",
     wordBreak: "break-word",
-    position: "relative",
-    minHeight: 38,
+    minHeight: 34,
     transition: "all 0.18s",
   });
 
   return (
     <div
       style={{
-        minHeight: "90vh",
+        minHeight: isMobile ? "96vh" : "90vh",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -134,44 +133,43 @@ export default function AstroChat({ selectedProfile }) {
       <div
         style={{
           width: "100%",
-          maxWidth: 600,
-          minHeight: 520,
+          maxWidth: isMobile ? "99vw" : 600,
+          minHeight: isMobile ? "82vh" : 520,
           background: "rgba(28, 24, 50, 0.97)",
-          borderRadius: 28,
-          boxShadow: "0 0 48px #a98aff77,0 2px 18px #1a182a55",
-          padding: "32px 0 28px 0",
+          borderRadius: isMobile ? 18 : 28,
+          boxShadow: "0 0 28px #a98aff66,0 2px 16px #1a182a33",
+          padding: isMobile ? "12px 0 6px 0" : "32px 0 28px 0",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          margin: "40px 0 54px 0",
-          border: "2.5px solid #bb7ffa50",
+          margin: isMobile ? "0 0 0 0" : "40px 0 54px 0",
+          border: isMobile ? "1.5px solid #bb7ffa35" : "2.5px solid #bb7ffa50",
           position: "relative",
-          backdropFilter: "blur(2px)",
+          backdropFilter: isMobile ? undefined : "blur(2px)",
         }}
       >
         <div
           style={{
             color: "#bb7ffa",
-            fontSize: 28,
+            fontSize: isMobile ? 22 : 28,
             fontWeight: 900,
-            marginBottom: 16,
+            marginBottom: isMobile ? 8 : 16,
             letterSpacing: 0.5,
             textShadow: "0 2px 14px #bb7ffa22",
           }}
         >
           Astro AI Chat
         </div>
-        {/* Кнопка очистки */}
         <button
           style={{
             position: "absolute",
-            top: 18,
-            right: 28,
+            top: isMobile ? 8 : 18,
+            right: isMobile ? 10 : 28,
             color: "#bb7ffa",
             background: "none",
             border: "none",
             fontWeight: 700,
-            fontSize: 15,
+            fontSize: isMobile ? 12 : 15,
             cursor: "pointer",
             opacity: 0.7,
           }}
@@ -184,13 +182,13 @@ export default function AstroChat({ selectedProfile }) {
         {/* Переписка */}
         <div
           style={{
-            width: "90%",
+            width: "95%",
             flex: 1,
-            minHeight: 280,
-            maxHeight: 410,
+            minHeight: isMobile ? 180 : 280,
+            maxHeight: isMobile ? "54vh" : 410,
             overflowY: "auto",
-            marginBottom: 18,
-            marginTop: 10,
+            marginBottom: isMobile ? 10 : 18,
+            marginTop: isMobile ? 3 : 10,
             display: "flex",
             flexDirection: "column",
             gap: 0,
@@ -198,7 +196,7 @@ export default function AstroChat({ selectedProfile }) {
             borderRadius: 17,
             background: "rgba(38, 30, 68, 0.30)",
             boxShadow: "0 2px 24px #bb7ffa09",
-            padding: "10px 3px 10px 5px",
+            padding: isMobile ? "5px 1px 5px 3px" : "10px 3px 10px 5px",
             position: "relative",
           }}
         >
@@ -216,15 +214,15 @@ export default function AstroChat({ selectedProfile }) {
               {m.role === "assistant" && (
                 <span
                   style={{
-                    width: 32,
-                    height: 32,
+                    width: isMobile ? 24 : 32,
+                    height: isMobile ? 24 : 32,
                     borderRadius: "50%",
                     background:
                       "radial-gradient(circle at 60% 30%,#bb7ffa 40%,#463689 100%)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: 20,
+                    fontSize: isMobile ? 16 : 20,
                     marginRight: 5,
                     marginLeft: 2,
                   }}
@@ -241,15 +239,15 @@ export default function AstroChat({ selectedProfile }) {
             <div
               style={{
                 alignSelf: "flex-start",
-                margin: "6px 0 6px 36px",
-                padding: "7px 20px",
+                margin: isMobile ? "4px 0 4px 28px" : "6px 0 6px 36px",
+                padding: isMobile ? "5px 13px" : "7px 20px",
                 color: "#bb7ffa",
                 opacity: 0.9,
                 fontWeight: 600,
                 letterSpacing: 0.6,
+                fontSize: isMobile ? 14 : 17,
               }}
             >
-              <span className="dot-flashing" />
               AI пишет ответ…
             </div>
           )}
@@ -260,9 +258,9 @@ export default function AstroChat({ selectedProfile }) {
           onSubmit={handleSend}
           style={{
             display: "flex",
-            width: "88%",
-            gap: 12,
-            marginTop: 4,
+            width: isMobile ? "97%" : "88%",
+            gap: isMobile ? 6 : 12,
+            marginTop: isMobile ? 3 : 4,
             alignItems: "center",
           }}
         >
@@ -278,12 +276,12 @@ export default function AstroChat({ selectedProfile }) {
             disabled={loading || !selectedProfile}
             style={{
               flex: 1,
-              padding: "15px 19px",
-              borderRadius: 11,
+              padding: isMobile ? "10px 13px" : "15px 19px",
+              borderRadius: isMobile ? 8 : 11,
               border: "1.5px solid #664ee7",
               background: "#201d32",
               color: "#f3eaff",
-              fontSize: 18,
+              fontSize: isMobile ? 15 : 18,
               fontWeight: 500,
               outline: "none",
               boxShadow: "0 1px 9px #bb7ffa18",
@@ -295,19 +293,20 @@ export default function AstroChat({ selectedProfile }) {
             }}
             autoFocus
             autoComplete="off"
+            inputMode="text"
           />
           <button
             type="submit"
             disabled={loading || !input.trim() || !selectedProfile}
             style={{
-              padding: "13px 32px",
-              borderRadius: 10,
+              padding: isMobile ? "9px 18px" : "13px 32px",
+              borderRadius: isMobile ? 6 : 10,
               background:
                 "linear-gradient(90deg,#bb7ffa 40%,#7a5cf2 120%)",
               color: "#201d32",
               border: "none",
               fontWeight: 800,
-              fontSize: 18,
+              fontSize: isMobile ? 15 : 18,
               cursor: loading || !input.trim() || !selectedProfile ? "not-allowed" : "pointer",
               boxShadow: "0 1px 12px #bb7ffa22",
               transition: "background 0.18s",
