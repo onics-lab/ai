@@ -19,9 +19,45 @@ export default function AstroChat({ selectedProfile }) {
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
+import React, { useRef, useEffect, useState } from "react";
+
+export default function AstroChat({ selectedProfile }) {
+  const [messages, setMessages] = useState([
+    {
+      role: "assistant",
+      content:
+        'Привет! Меня зовут Тимофей ... (и т.д.)',
+    },
+  ]);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  // NEW: Трекаем последнее количество сообщений
+  const prevMessagesLength = useRef(messages.length);
+
   useEffect(() => {
-    localStorage.setItem(LS_KEY, JSON.stringify(messages));
+    // Автоскроллим только если реально добавили новое сообщение (но НЕ при монтировании или возврате к разделу)
+    if (messages.length > prevMessagesLength.current) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+    prevMessagesLength.current = messages.length;
   }, [messages]);
+
+  // ... остальной твой код чата
+
+  return (
+    <div style={{ /* ... */ }}>
+      {/* ... */}
+      <div style={{ overflowY: "auto", /* ... */ }}>
+        {/* сообщения */}
+        <div ref={messagesEndRef} />
+      </div>
+      {/* ... */}
+    </div>
+  );
+}
+
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
