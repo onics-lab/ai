@@ -1,176 +1,94 @@
-import React, { useState, useRef, useEffect } from "react";
+// src/AstroChat.jsx
 
-export default function AstroChat({ astroPath }) {
+import React, { useState } from "react";
+
+export default function AstroChat() {
   const [messages, setMessages] = useState([
-    {
-      from: "ai",
-      text:
-        `💬 Добро пожаловать в Astro Chat!\n` +
-        (astroPath
-          ? `Вы выбрали путь: ${getAstroPathLabel(astroPath)}.`
-          : "Выберите астрологический путь для персонального astro-анализа!") +
-        "\nНапишите дату рождения (например: 11.07.1994) и свой вопрос.",
-    },
+    { role: "assistant", content: "Привет! Меня зовут Тимофей и я докажу тебе, что мы все муравьшки, которые очень подвержены влиянию большой системы под названием \"Космос\". Мы - единое целое. И от движений планет и звезд зависит многое. Установи в профиле дату и время своего рождения и я расскажу тебе о многом..." }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const chatEndRef = useRef(null);
 
-  useEffect(() => {
-    if (chatEndRef.current)
-      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
-
-  // Парсер даты (для передачи в профили или анализа)
-  function parseBirth(text) {
-    const match = text.match(/(\d{1,2})[.\/-](\d{1,2})[.\/-](\d{2,4})/);
-    if (!match) return null;
-    const [_, d, m, y] = match;
-    return `${d.padStart(2, "0")}.${m.padStart(2, "0")}.${
-      y.length === 2 ? "19" + y : y
-    }`;
+  async function sendMessageToGPT(msgs) {
+    const response = await fetch("/api/gpt", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ messages: msgs }),
+    });
+    const data = await response.json();
+    return data.choices?.[0]?.message?.content || "Ошибка ответа AI.";
   }
 
-  const sendMessage = async (e) => {
+  async function handleSend(e) {
     e.preventDefault();
     if (!input.trim()) return;
-    setMessages([...messages, { from: "user", text: input.trim() }]);
+    const userMessage = { role: "user", content: input };
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
+    setInput("");
     setLoading(true);
 
-    // (!) В реальном проекте здесь делаем запрос к backend/GPT
-    const birthDate = parseBirth(input.trim());
-
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          from: "ai",
-          text: birthDate
-            ? `🗺️ Дата рождения получена: ${birthDate}\n(В будущем — полный astro-разбор!)`
-            : `✨ Вопрос принят! В следующих версиях тут будет astro-ответ...`,
-        },
-      ]);
-      setLoading(false);
-    }, 1200);
-
-    setInput("");
-  };
+    try {
+      const aiReply = await sendMessageToGPT(newMessages);
+      setMessages([...newMessages, { role: "assistant", content: aiReply }]);
+    } catch (err) {
+      setMessages([...newMessages, { role: "assistant", content: "Ошибка AI." }]);
+    }
+    setLoading(false);
+  }
 
   return (
-    <div
-      style={{
-        maxWidth: 640,
-        margin: "0 auto",
-        background: "linear-gradient(115deg,#23263a 80%,#181930 100%)",
-        border: "1.5px solid #23263e",
-        borderRadius: 22,
-        boxShadow: "0 4px 24px #1e184466",
-        padding: 28,
-        display: "flex",
-        flexDirection: "column",
-      }}
-    >
-      <div
-        style={{
-          flex: 1,
-          marginBottom: 14,
-          minHeight: 220,
-          maxHeight: 280,
-          overflowY: "auto",
-          display: "flex",
-          flexDirection: "column",
-          gap: 12,
-        }}
-      >
-        {messages.map((msg, idx) => (
+    <div style={{ maxWidth: 600, margin: "40px auto", background: "#222b3a", borderRadius: 16, boxShadow: "0 8px 32px #110a30", padding: 24 }}>
+      <h2 style={{ textAlign: "center" }}>Astro AI Chat</h2>
+      <div style={{ minHeight: 280, marginBottom: 16 }}>
+        {messages.map((m, i) => (
           <div
-            key={idx}
+            key={i}
             style={{
-              display: "flex",
-              justifyContent: msg.from === "user" ? "flex-end" : "flex-start",
+              background: m.role === "user" ? "#3a3450" : "#232a40",
+              color: m.role === "user" ? "#aac" : "#fff",
+              margin: "8px 0",
+              borderRadius: 12,
+              padding: 10,
+              alignSelf: m.role === "user" ? "flex-end" : "flex-start",
+              maxWidth: "95%",
+              whiteSpace: "pre-line",
             }}
           >
-            <span
-              style={{
-                padding: "12px 22px",
-                borderRadius: 16,
-                fontSize: 16,
-                background:
-                  msg.from === "user"
-                    ? "linear-gradient(90deg,#a2b6ff 60%,#d6cfff 100%)"
-                    : "#252747",
-                color: msg.from === "user" ? "#5347c7" : "#d5d1f7",
-                fontWeight: msg.from === "user" ? 500 : 400,
-                boxShadow:
-                  msg.from === "user"
-                    ? "0 2px 8px #a3a3e144"
-                    : "0 2px 8px #c6bfff44",
-                maxWidth: "70%",
-                wordBreak: "break-word",
-                border:
-                  msg.from === "user"
-                    ? "1.5px solid #d2ccfa"
-                    : "1.5px solid #2c265e",
-                whiteSpace: "pre-line",
-                transition: "all 0.17s",
-              }}
-            >
-              {msg.text}
-            </span>
+            <b>{m.role === "user" ? "Вы:" : "Astro AI:"}</b> {m.content}
           </div>
         ))}
         {loading && (
-          <div style={{ display: "flex", justifyContent: "flex-start" }}>
-            <span
-              style={{
-                padding: "10px 22px",
-                borderRadius: 16,
-                background: "#23263a",
-                color: "#816ad2",
-                fontWeight: "400",
-                fontSize: 16,
-              }}
-            >
-              Astro AI печатает...
-            </span>
-          </div>
+          <div style={{
+            color: "#fff",
+            opacity: 0.6,
+            fontStyle: "italic",
+            margin: "8px 0",
+            paddingLeft: 4
+          }}>Astro AI печатает...</div>
         )}
-        <div ref={chatEndRef} />
       </div>
-      <form onSubmit={sendMessage} style={{ display: "flex", gap: 12 }}>
+      <form onSubmit={handleSend} style={{ display: "flex", gap: 8 }}>
         <input
           type="text"
-          placeholder="Напишите дату рождения и вопрос..."
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={e => setInput(e.target.value)}
+          placeholder="Введите ваш вопрос..."
+          style={{ flex: 1, borderRadius: 8, border: "none", padding: 12, fontSize: 16, background: "#181c2b", color: "#fff" }}
           disabled={loading}
-          style={{
-            flex: 1,
-            borderRadius: 13,
-            padding: "14px 22px",
-            border: "1.5px solid #353f5a",
-            fontSize: 16,
-            background: "#23263a",
-            color: "#d5d1f7",
-            outline: "none",
-            fontWeight: 500,
-          }}
         />
         <button
           type="submit"
-          disabled={loading}
+          disabled={loading || !input.trim()}
           style={{
-            background: "linear-gradient(90deg,#a991fa 30%,#6247ea 90%)",
+            background: "#6e44ff",
             color: "#fff",
-            fontWeight: "bold",
             border: "none",
-            borderRadius: 13,
-            padding: "14px 32px",
-            cursor: "pointer",
+            borderRadius: 8,
+            padding: "0 22px",
             fontSize: 16,
-            boxShadow: "0 2px 14px #9e91e733",
-            opacity: loading ? 0.7 : 1,
-            transition: "all 0.18s",
+            cursor: loading ? "not-allowed" : "pointer",
+            opacity: loading ? 0.5 : 1
           }}
         >
           {loading ? "..." : "Отправить"}
@@ -178,23 +96,4 @@ export default function AstroChat({ astroPath }) {
       </form>
     </div>
   );
-}
-
-function getAstroPathLabel(key) {
-  switch (key) {
-    case "western":
-      return "Западная астрология";
-    case "human":
-      return "Дизайн человека";
-    case "chinese":
-      return "Китайский зодиак";
-    case "vedic":
-      return "Ведическая астрология";
-    case "pythagorean":
-      return "Пифагорейская нумерология";
-    case "chaldean":
-      return "Халдейская нумерология";
-    default:
-      return "";
-  }
 }
