@@ -10,7 +10,7 @@ const initialProfile = {
   gender: "",
 };
 
-export default function ProfileManager({ profiles, setProfiles, selectedProfile, setSelectedProfile }) {
+export default function ProfileManager({ profiles = [], setProfiles, selectedProfile, setSelectedProfile }) {
   const [newProfile, setNewProfile] = useState(initialProfile);
   const [editing, setEditing] = useState(false);
 
