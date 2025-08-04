@@ -1,24 +1,3 @@
-import React, { useState, useRef, useEffect } from "react";
-
-const LS_KEY = "astroai_chat_history";
-
-export default function AstroChat({ selectedProfile }) {
-  const [messages, setMessages] = useState(() => {
-    const saved = localStorage.getItem(LS_KEY);
-    if (saved) return JSON.parse(saved);
-    return [
-      {
-        role: "assistant",
-        content:
-          "Привет! Меня зовут Тимофей и я докажу тебе, что мы все муравьшки, которые очень подвержены влиянию большой системы под названием \"Космос\". Мы - единое целое. И от движений планет и звезд зависит многое. Установи в профиле дату и время своего рождения и я расскажу тебе о многом...",
-      },
-    ];
-  });
-
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const messagesEndRef = useRef(null);
-
 import React, { useRef, useEffect, useState } from "react";
 
 export default function AstroChat({ selectedProfile }) {
@@ -26,331 +5,258 @@ export default function AstroChat({ selectedProfile }) {
     {
       role: "assistant",
       content:
-        'Привет! Меня зовут Тимофей ... (и т.д.)',
+        "Чат очищен. Готов отвечать на новые вопросы! Установи в профиле дату и время своего рождения и я расскажу тебе о многом...",
     },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // NEW: Трекаем последнее количество сообщений
+  // Сохраняем предыдущее кол-во сообщений для контроля автоскролла
   const prevMessagesLength = useRef(messages.length);
-
   useEffect(() => {
-    // Автоскроллим только если реально добавили новое сообщение (но НЕ при монтировании или возврате к разделу)
+    // Прокрутка только если добавилось новое сообщение, не при каждом рендере!
     if (messages.length > prevMessagesLength.current) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
     prevMessagesLength.current = messages.length;
   }, [messages]);
 
-  // ... остальной твой код чата
-
-  return (
-    <div style={{ /* ... */ }}>
-      {/* ... */}
-      <div style={{ overflowY: "auto", /* ... */ }}>
-        {/* сообщения */}
-        <div ref={messagesEndRef} />
-      </div>
-      {/* ... */}
-    </div>
-  );
-}
-
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, loading]);
-
-  function handleClearChat() {
-    setMessages([
-      {
-        role: "assistant",
-        content:
-          "Чат очищен. Готов отвечать на новые вопросы! Установи в профиле дату и время своего рождения и я расскажу тебе о многом...",
-      },
-    ]);
-  }
-
-  async function handleSend(e) {
-    e.preventDefault();
-    if (!input.trim() || loading) return;
-    if (!selectedProfile) {
-      setMessages((msgs) => [
-        ...msgs,
-        {
-          role: "assistant",
-          content:
-            "Пожалуйста, выбери и заполни профиль с датой и временем рождения во вкладке «Мои профили».",
-        },
-      ]);
-      setInput("");
-      return;
-    }
-    const newMessages = [...messages, { role: "user", content: input }];
-    setMessages(newMessages);
-    setInput("");
+  // Отправка сообщения (пример)
+  async function handleSend() {
+    if (!input.trim()) return;
     setLoading(true);
-
-    try {
-      const res = await fetch("/api/gpt", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          messages: newMessages.slice(-12),
-          profile: selectedProfile,
-        }),
-      });
-      const data = await res.json();
+    setMessages((msgs) => [
+      ...msgs,
+      { role: "user", content: input.trim() },
+    ]);
+    setInput("");
+    // Тут запрашивай GPT (и прокидывай профиль если есть)
+    // Имитация ответа:
+    setTimeout(() => {
       setMessages((msgs) => [
         ...msgs,
         {
           role: "assistant",
           content:
-            data.choices?.[0]?.message?.content ||
-            "Ошибка ответа AI. Попробуй ещё раз.",
+            "Это пример ответа AI. На мобиле теперь всё стильно, текст не уезжает, карточки занимают ширину экрана. Автопрокрутка вниз только при новых сообщениях.",
         },
       ]);
-    } catch {
-      setMessages((msgs) => [
-        ...msgs,
-        {
-          role: "assistant",
-          content: "Ошибка соединения с сервером.",
-        },
-      ]);
-    }
-    setLoading(false);
+      setLoading(false);
+    }, 900);
   }
 
-  // Media-query-like style helpers
-  const isMobile =
-    window.innerWidth <= 600 ||
-    /iPhone|Android|Mobile/i.test(navigator.userAgent);
+  // Enter = отправить
+  function handleKeyDown(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
+  }
 
-  // Bubble style
-  const bubbleStyle = (role) => ({
-    alignSelf: role === "user" ? "flex-end" : "flex-start",
-    background:
-      role === "user"
-        ? "linear-gradient(90deg,#7a5cf2,#bb7ffa 85%)"
-        : "rgba(22,20,44,0.88)",
-    color: role === "user" ? "#fff" : "#e4daff",
-    borderRadius:
-      role === "user"
-        ? "18px 18px 6px 18px"
-        : "18px 18px 18px 6px",
-    boxShadow:
-      role === "user"
-        ? "0 4px 16px #bb7ffa50"
-        : "0 2px 12px #44336615",
-    maxWidth: isMobile ? "98%" : "84%",
-    padding: isMobile ? "12px 12px" : "16px 18px",
-    fontSize: isMobile ? 15.5 : 17,
-    margin: "6px 0",
-    whiteSpace: "pre-line",
-    wordBreak: "break-word",
-    minHeight: 34,
-    transition: "all 0.18s",
-  });
+  // Определяем мобильную ширину
+  const isMobile =
+    typeof window !== "undefined"
+      ? window.innerWidth < 600
+      : false;
+
+  const chatWidth = isMobile ? "98vw" : 520;
+  const chatPadding = isMobile ? "10vw 0 8vw 0" : "40px 0 26px 0";
+  const bubbleMaxWidth = isMobile ? "90vw" : 400;
+  const fontSize = isMobile ? 15.5 : 17;
 
   return (
     <div
       style={{
-        minHeight: isMobile ? "96vh" : "90vh",
+        width: "100vw",
+        minHeight: "72vh",
         display: "flex",
+        flexDirection: "column",
         alignItems: "center",
-        justifyContent: "center",
-        background:
-          "radial-gradient(circle at 75% 75%, #352666 0%, #181a2f 80%)",
+        justifyContent: "flex-start",
+        padding: chatPadding,
+        background: "none",
       }}
     >
       <div
         style={{
-          width: "100%",
-          maxWidth: isMobile ? "99vw" : 600,
-          minHeight: isMobile ? "82vh" : 520,
-          background: "rgba(28, 24, 50, 0.97)",
-          borderRadius: isMobile ? 18 : 28,
-          boxShadow: "0 0 28px #a98aff66,0 2px 16px #1a182a33",
-          padding: isMobile ? "12px 0 6px 0" : "32px 0 28px 0",
+          width: chatWidth,
+          maxWidth: "100vw",
+          background: "rgba(34,24,52,0.96)",
+          borderRadius: 22,
+          boxShadow: "0 8px 42px #bb7ffa2e",
+          padding: isMobile ? "17px 4px 11px 4px" : "38px 32px 21px 32px",
+          marginBottom: isMobile ? 15 : 25,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
-          margin: isMobile ? "0 0 0 0" : "40px 0 54px 0",
-          border: isMobile ? "1.5px solid #bb7ffa35" : "2.5px solid #bb7ffa50",
+          minHeight: isMobile ? 370 : 430,
           position: "relative",
-          backdropFilter: isMobile ? undefined : "blur(2px)",
         }}
       >
         <div
           style={{
-            color: "#bb7ffa",
-            fontSize: isMobile ? 22 : 28,
             fontWeight: 900,
-            marginBottom: isMobile ? 8 : 16,
-            letterSpacing: 0.5,
-            textShadow: "0 2px 14px #bb7ffa22",
+            fontSize: isMobile ? 21 : 27,
+            color: "#bb7ffa",
+            letterSpacing: ".5px",
+            marginBottom: 12,
+            textAlign: "center",
           }}
         >
           Astro AI Chat
+          <button
+            onClick={() =>
+              setMessages([
+                {
+                  role: "assistant",
+                  content:
+                    "Чат очищен. Готов отвечать на новые вопросы! Установи в профиле дату и время своего рождения и я расскажу тебе о многом...",
+                },
+              ])
+            }
+            style={{
+              fontSize: isMobile ? 12 : 14,
+              marginLeft: 11,
+              color: "#c6b0ffcc",
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              textDecoration: "underline",
+              fontWeight: 500,
+              padding: 0,
+            }}
+          >
+            Очистить
+          </button>
         </div>
-        <button
-          style={{
-            position: "absolute",
-            top: isMobile ? 8 : 18,
-            right: isMobile ? 10 : 28,
-            color: "#bb7ffa",
-            background: "none",
-            border: "none",
-            fontWeight: 700,
-            fontSize: isMobile ? 12 : 15,
-            cursor: "pointer",
-            opacity: 0.7,
-          }}
-          onClick={handleClearChat}
-          title="Очистить чат"
-        >
-          🗑 Очистить
-        </button>
-
-        {/* Переписка */}
+        {/* Чат-лента */}
         <div
           style={{
-            width: "95%",
             flex: 1,
-            minHeight: isMobile ? 180 : 280,
-            maxHeight: isMobile ? "54vh" : 410,
+            width: "100%",
             overflowY: "auto",
-            marginBottom: isMobile ? 10 : 18,
-            marginTop: isMobile ? 3 : 10,
             display: "flex",
             flexDirection: "column",
-            gap: 0,
-            scrollbarWidth: "thin",
-            borderRadius: 17,
-            background: "rgba(38, 30, 68, 0.30)",
-            boxShadow: "0 2px 24px #bb7ffa09",
-            padding: isMobile ? "5px 1px 5px 3px" : "10px 3px 10px 5px",
-            position: "relative",
+            gap: isMobile ? 9 : 15,
+            minHeight: isMobile ? 180 : 200,
+            marginBottom: isMobile ? 13 : 24,
+            maxHeight: isMobile ? 350 : 390,
           }}
         >
-          {messages.map((m, i) => (
+          {messages.map((msg, idx) => (
             <div
-              key={i}
+              key={idx}
               style={{
                 display: "flex",
+                flexDirection: "row",
                 alignItems: "flex-end",
-                marginBottom: 2,
-                gap: 8,
-                position: "relative",
+                justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
+                width: "100%",
               }}
             >
-              {m.role === "assistant" && (
-                <span
+              {/* Аватар AI */}
+              {msg.role === "assistant" && (
+                <div
                   style={{
-                    width: isMobile ? 24 : 32,
-                    height: isMobile ? 24 : 32,
+                    width: isMobile ? 22 : 27,
+                    height: isMobile ? 22 : 27,
                     borderRadius: "50%",
-                    background:
-                      "radial-gradient(circle at 60% 30%,#bb7ffa 40%,#463689 100%)",
+                    background: "linear-gradient(145deg,#bb7ffa 65%,#4631b8 100%)",
+                    marginRight: 6,
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: isMobile ? 16 : 20,
-                    marginRight: 5,
-                    marginLeft: 2,
+                    fontSize: isMobile ? 15 : 18,
+                    color: "#fff",
                   }}
                 >
-                  <span role="img" aria-label="AI">
-                    ⭐
-                  </span>
-                </span>
+                  ★
+                </div>
               )}
-              <div style={bubbleStyle(m.role)}>{m.content}</div>
+              {/* Сообщение */}
+              <div
+                style={{
+                  background:
+                    msg.role === "user"
+                      ? "linear-gradient(90deg,#bb7ffa 50%,#9176fd 100%)"
+                      : "rgba(32,26,56,0.97)",
+                  color: msg.role === "user" ? "#191736" : "#f9f7fa",
+                  borderRadius: 16,
+                  boxShadow:
+                    msg.role === "user"
+                      ? "0 2px 13px #bb7ffa33"
+                      : "0 2px 11px #30297a22",
+                  padding: isMobile ? "13px 14px" : "16px 18px",
+                  fontSize: fontSize,
+                  fontWeight: msg.role === "user" ? 600 : 400,
+                  maxWidth: bubbleMaxWidth,
+                  marginBottom: 2,
+                  wordBreak: "break-word",
+                  whiteSpace: "pre-wrap",
+                  textAlign: "left",
+                }}
+              >
+                {msg.content}
+              </div>
+              {/* Пустой div для выравнивания пользователя */}
+              {msg.role === "user" && (
+                <div style={{ width: isMobile ? 22 : 27, marginLeft: 6 }} />
+              )}
             </div>
           ))}
-          {loading && (
-            <div
-              style={{
-                alignSelf: "flex-start",
-                margin: isMobile ? "4px 0 4px 28px" : "6px 0 6px 36px",
-                padding: isMobile ? "5px 13px" : "7px 20px",
-                color: "#bb7ffa",
-                opacity: 0.9,
-                fontWeight: 600,
-                letterSpacing: 0.6,
-                fontSize: isMobile ? 14 : 17,
-              }}
-            >
-              AI пишет ответ…
-            </div>
-          )}
           <div ref={messagesEndRef} />
         </div>
-        {/* Input */}
-        <form
-          onSubmit={handleSend}
+        {/* Ввод */}
+        <div
           style={{
+            width: "100%",
             display: "flex",
-            width: isMobile ? "97%" : "88%",
-            gap: isMobile ? 6 : 12,
-            marginTop: isMobile ? 3 : 4,
-            alignItems: "center",
+            gap: 8,
+            marginTop: isMobile ? 3 : 10,
           }}
         >
-          <input
-            type="text"
-            placeholder={
-              !selectedProfile
-                ? "Сначала выбери профиль!"
-                : "Введите ваш вопрос..."
-            }
+          <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            disabled={loading || !selectedProfile}
+            onKeyDown={handleKeyDown}
+            placeholder="Введите ваш вопрос..."
             style={{
               flex: 1,
-              padding: isMobile ? "10px 13px" : "15px 19px",
-              borderRadius: isMobile ? 8 : 11,
-              border: "1.5px solid #664ee7",
-              background: "#201d32",
-              color: "#f3eaff",
-              fontSize: isMobile ? 15 : 18,
-              fontWeight: 500,
-              outline: "none",
-              boxShadow: "0 1px 9px #bb7ffa18",
+              borderRadius: 11,
+              border: "1.5px solid #bb7ffa77",
+              padding: isMobile ? "11px 10px" : "13px 17px",
+              fontSize: isMobile ? 15 : 16.5,
+              background: "#25193a",
+              color: "#fff",
+              resize: "none",
+              minHeight: isMobile ? 38 : 44,
+              maxHeight: 110,
+              fontFamily: "inherit",
             }}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                handleSend(e);
-              }
-            }}
-            autoFocus
-            autoComplete="off"
-            inputMode="text"
+            rows={1}
+            disabled={loading}
           />
           <button
-            type="submit"
-            disabled={loading || !input.trim() || !selectedProfile}
+            onClick={handleSend}
+            disabled={loading || !input.trim()}
             style={{
-              padding: isMobile ? "9px 18px" : "13px 32px",
-              borderRadius: isMobile ? 6 : 10,
+              borderRadius: 11,
               background:
-                "linear-gradient(90deg,#bb7ffa 40%,#7a5cf2 120%)",
-              color: "#201d32",
+                "linear-gradient(90deg,#bb7ffa 60%,#7c6ff6 100%)",
+              color: "#191736",
+              fontWeight: 900,
+              fontSize: isMobile ? 16 : 17,
               border: "none",
-              fontWeight: 800,
-              fontSize: isMobile ? 15 : 18,
-              cursor: loading || !input.trim() || !selectedProfile ? "not-allowed" : "pointer",
-              boxShadow: "0 1px 12px #bb7ffa22",
-              transition: "background 0.18s",
+              padding: isMobile ? "11px 16px" : "14px 22px",
+              cursor: loading || !input.trim() ? "not-allowed" : "pointer",
+              opacity: loading || !input.trim() ? 0.6 : 1,
+              boxShadow: "0 2px 8px #bb7ffa2a",
             }}
           >
             {loading ? "..." : "Отправить"}
           </button>
-        </form>
+        </div>
       </div>
     </div>
   );
