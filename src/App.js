@@ -13,7 +13,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("home");
   const [selectedPath, setSelectedPath] = useState(null);
 
-  // ДОБАВИЛИ хранилище профилей и текущий выбранный профиль
+  // Стейт для профилей и текущего выбранного профиля
   const [profiles, setProfiles] = useState([]);
   const [selectedProfile, setSelectedProfile] = useState(null);
 
@@ -81,7 +81,12 @@ export default function App() {
             showWarning={false}
           />
         )}
-        {activeTab === "chat" && <AstroChat astroPath={selectedPath} />}
+        {activeTab === "chat" && (
+          <AstroChat
+            astroPath={selectedPath}
+            selectedProfile={selectedProfile} // <<< ВАЖНО: передаём активный профиль
+          />
+        )}
         {activeTab === "profiles" && (
           <ProfileManager
             profiles={profiles}
