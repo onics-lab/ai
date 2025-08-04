@@ -3,9 +3,22 @@ export default async function handler(req, res) {
     res.status(405).json({ error: "Method not allowed" });
     return;
   }
-  const { messages } = req.body;
+
+  const { messages, profile } = req.body; // ← добавили profile
   const apiKey = process.env.OPENAI_API_KEY;
-  const systemPrompt = process.env.SYSTEM_PROMPT;
+  let systemPrompt = process.env.SYSTEM_PROMPT;
+
+  // Если профиль есть — добавим его в systemPrompt
+  if (profile && profile.name && profile.birthDate) {
+    systemPrompt =
+      `Профиль пользователя:\n` +
+      `Имя: ${profile.name}\n` +
+      `Дата рождения: ${profile.birthDate}\n` +
+      `Время рождения: ${profile.birthTime || "не указано"}\n` +
+      `Место рождения: ${profile.birthLocation || "не указано"}\n` +
+      `Пол: ${profile.gender || "не указан"}\n\n` +
+      (systemPrompt || "");
+  }
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -25,7 +38,6 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    // Если у OpenAI ошибка, вернем её явно
     if (data.error) {
       res.status(200).json({ choices: [{ message: { content: `AI Error: ${data.error.message}` } }] });
       return;
