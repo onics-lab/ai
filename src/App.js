@@ -13,6 +13,10 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("home");
   const [selectedPath, setSelectedPath] = useState(null);
 
+  // ДОБАВИЛИ хранилище профилей и текущий выбранный профиль
+  const [profiles, setProfiles] = useState([]);
+  const [selectedProfile, setSelectedProfile] = useState(null);
+
   return (
     <div
       style={{
@@ -78,7 +82,14 @@ export default function App() {
           />
         )}
         {activeTab === "chat" && <AstroChat astroPath={selectedPath} />}
-        {activeTab === "profiles" && <ProfileManager />}
+        {activeTab === "profiles" && (
+          <ProfileManager
+            profiles={profiles}
+            setProfiles={setProfiles}
+            selectedProfile={selectedProfile}
+            setSelectedProfile={setSelectedProfile}
+          />
+        )}
       </main>
 
       {/* Footer */}
